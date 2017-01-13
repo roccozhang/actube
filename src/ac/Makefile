@@ -11,14 +11,15 @@ ifndef ARCH
 endif
 
 LDFLAGS+=-g -D_REENTRANT -L/usr/local/lib -L../lib/$(ARCH) 
-CFLAGS += -Werror -g -O0 -D_REENTRANT -DIPV6 -I/usr/local/include -I../ -DSYS_ARCH=\"${ARCH}\"
+CFLAGS += -Wall -g -O0 -D_REENTRANT -DIPV6 -I/usr/local/include -I../ -DSYS_ARCH=\"${ARCH}\"
 
 
 LIBS+=-lcapwap
+LIBS+=-lcapwap80211
+LIBS+=-lcipwap
 LIBS+=-lcisco
 LIBS+=-lfortinet
-LIBS+=-lcipwap
-LIBS+=-lcapwap80211
+LIBS+=-lzyxel
 LIBS+=-lcw
 LIBS+=-lrt
 LIBS+=-lpthread
@@ -56,6 +57,7 @@ AC_MODULES = mod_cipwap.o
 # list of generated object files for AC. 
 AC_OBJS = \
 	wtplist.o wtpman.o conf.o ac_main.o \
+	dataman.o \
 	ac_interface.o \
 	socklist.o \
 	db.o \

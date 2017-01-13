@@ -92,11 +92,15 @@ void cw_init_request(struct conn *conn, int msg_id)
 	cw_set_msg_elems_len(msgptr, 0);
 }
 
-void cw_init_keepalive(struct conn *conn)
+void cw_init_data_msg(struct conn *conn)
 {
 	uint8_t *buffer = conn->req_buffer;
 	cw_put_dword(buffer + 0, 0);
 	cw_put_dword(buffer + 4, 0);
+
+	/* unencrypted */
+	cw_set_hdr_preamble(buffer, CAPWAP_VERSION << 4 | 0);
+
 
 
 }
@@ -202,7 +206,7 @@ static struct cw_actiondef *load_mods(struct conn *conn, uint8_t * rawmsg, int l
 
 	cw_dbg(DBG_INFO, "Mods deteced: %s,%s", cmod->name, bmod->name);
 
-	struct cw_actiondef *ad = mod_cache_add(cmod, bmod);
+	struct cw_actiondef *ad = mod_cache_add(conn,cmod, bmod);
 
 	return ad;
 
@@ -297,7 +301,7 @@ static int process_elements(struct conn *conn, uint8_t * rawmsg, int len,
 		//struct mod_ac *mod;
 		struct cw_actiondef *ad = load_mods(conn, rawmsg, len, elems_len, from);
 		if (!ad) {
-			cw_log(LOG_ERR, "Eror");
+			cw_log(LOG_ERR, "Error");
 			errno = EAGAIN;
 			return -1;
 		}
@@ -353,6 +357,10 @@ static int process_elements(struct conn *conn, uint8_t * rawmsg, int len,
 		return -1;
 	}
 
+	
+	if (conn->msg_start){
+		conn->msg_start(conn, afm, rawmsg, len, from);
+	}
 
 	/* Execute start processor for message */
 	if (afm->start) {
@@ -373,9 +381,6 @@ static int process_elements(struct conn *conn, uint8_t * rawmsg, int len,
 		as.elem_id = cw_get_elem_id(elem);
 		int elem_len = cw_get_elem_len(elem);
 
-		cw_dbg_elem(DBG_ELEM, conn, as.msg_id, as.elem_id, cw_get_elem_data(elem),
-			    elem_len);
-
 
 		af = cw_actionlist_in_get(conn->actions->in, &as);
 
@@ -391,6 +396,10 @@ static int process_elements(struct conn *conn, uint8_t * rawmsg, int len,
 		if (!check_len(conn, af, cw_get_elem_data(elem), elem_len, from)) {
 			continue;
 		}
+		cw_dbg_elem(DBG_ELEM, conn, as.msg_id, as.elem_id, cw_get_elem_data(elem),
+			    elem_len);
+
+
 
 		int afrc = 1;
 		if (af->start) {
@@ -405,6 +414,10 @@ static int process_elements(struct conn *conn, uint8_t * rawmsg, int len,
 			stravltree_add(conn->mand, af->item_id);
 		}
 
+		if(conn->elem_end){
+			afrc = conn->elem_end(conn,af,afrc,cw_get_elem_data(elem), elem_len,from);
+		}
+
 	}
 
 	/* all message elements are processed, do now after processing
@@ -413,7 +426,9 @@ static int process_elements(struct conn *conn, uint8_t * rawmsg, int len,
 	int result_code = 0;
 
 
-	int rct = cw_in_check_generic_req(conn, afm, rawmsg, len, from);
+
+	int rct = cw_in_check_generic(conn, afm, rawmsg, len, from);
+
 	if (rct && conn->strict_capwap)
 	{
 		result_code = rct;
@@ -423,6 +438,9 @@ static int process_elements(struct conn *conn, uint8_t * rawmsg, int len,
 		if (afm->end) {
 			result_code = afm->end(conn, afm, rawmsg, len, from);
 
+		}
+		if (conn->msg_end){
+			conn->msg_end(conn, afm, rawmsg, len, from);
 		}
 	}
 
@@ -545,11 +563,9 @@ int process_message(struct conn *conn, uint8_t * rawmsg, int rawlen,
  * @param packet pointer to packet data
  * @param len lenght of packet data
  */
-int conn_process_packet(struct conn *conn, uint8_t * packet, int len,
+int conn_process_packet2(struct conn *conn, uint8_t * packet, int len,
 			struct sockaddr *from)
 {
-	/* show this packet in debug output */
-	cw_dbg_pkt(DBG_PKT_IN, conn, packet, len, from);
 
 
 	if (len < 8) {
@@ -636,6 +652,36 @@ int conn_process_packet(struct conn *conn, uint8_t * packet, int len,
 	cw_dbg_msg(DBG_MSG_IN, conn, packet, len, from);
 	return conn->process_message(conn, packet, len, from);
 }
+
+int conn_process_packet(struct conn *conn, uint8_t * packet, int len,
+			struct sockaddr *from){
+
+	/* show this packet in debug output */
+	cw_dbg_pkt(DBG_PKT_IN, conn, packet, len, from);
+
+	return conn_process_packet2(conn,packet,len,from);
+}
+
+
+int conn_process_data_packet(struct conn *conn, uint8_t * packet, int len,
+			struct sockaddr *from){
+
+	/* show this packet in debug output */
+	cw_dbg_pkt(DBG_PKT_IN, conn, packet, len, from);
+
+	return conn_process_packet2(conn,packet,len,from);
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 /**

@@ -94,7 +94,7 @@ static cw_action_in_t actions_in[] = {
 		.msg_id = CW_MSG_DISCOVERY_REQUEST, 
 		.elem_id = CW_ELEM_WTP_MAC_TYPE,
 	 	.start = cw_in_generic2, 
-		.item_id = "wtp_mac_type", 
+		.item_id = CW_ITEM_WTP_MAC_TYPE,
 		.mand = 1, 
 		.min_len = 1, 
 		.max_len = 1
@@ -172,7 +172,7 @@ static cw_action_in_t actions_in[] = {
 		.msg_id = CW_MSG_JOIN_REQUEST, 
 		.elem_id = CW_ELEM_WTP_NAME,
 	 	.start = cw_in_generic2, 
-		.item_id = "wtp_name", 
+		.item_id = CW_ITEM_WTP_NAME, 
 		.mand = 1, 
 		.min_len = 1, 
 		.max_len = 1024
@@ -184,7 +184,7 @@ static cw_action_in_t actions_in[] = {
 		.capwap_state = CW_STATE_JOIN, 
 		.msg_id = CW_MSG_JOIN_REQUEST, 
 		.elem_id = CW_ELEM_SESSION_ID,
-	 	.start = cw_in_generic2, 
+	 	.start = capwap_in_session_id, 
 		.item_id = CW_ITEM_SESSION_ID, 
 		.mand = 1, 
 		.min_len = 16, 
@@ -314,7 +314,7 @@ static cw_action_in_t actions_in[] = {
 
 
 	/* --------------------------------------------------------------------------
-	 * Configuration Status Request 
+	 * Configuration Status Request - IN 
 	 */
 	{
 		.capwap_state = CW_STATE_CONFIGURE, 
@@ -337,13 +337,13 @@ static cw_action_in_t actions_in[] = {
 	}
 	,
 
-	/*  Radio Admin State - Config Status Request */
+	/*  Radio Admin State (IN) - Config Status Request */
 	{
 		.capwap_state = CW_STATE_CONFIGURE, 
 		.msg_id = CW_MSG_CONFIGURATION_STATUS_REQUEST,
 		.elem_id = CW_ELEM_RADIO_ADMINISTRATIVE_STATE,
-		.item_id = CW_ITEM_RADIO_ADMINISTRATIVE_STATE,
-		.start = cw_in_radio_administrative_state,
+		.item_id = CW_RADIOITEM_ADMIN_STATE,
+		.start = cw_in_radio_generic,
 		.mand = 1
 
 	}
@@ -417,8 +417,8 @@ static cw_action_in_t actions_in[] = {
 		.capwap_state = CW_STATE_CONFIGURE, 
 		.msg_id= CW_MSG_CHANGE_STATE_EVENT_REQUEST,
 		.elem_id = CW_ELEM_RADIO_OPERATIONAL_STATE,
-		.item_id = CW_RADIO_OPER_STATE,
-		.start = cw_in_radio_operational_state,
+		.item_id = CW_RADIOITEM_OPER_STATE,
+		.start = cw_in_radio_generic, //operational_state,
 		.min_len=3,
 		.max_len=3,
 		.mand = 0
@@ -465,8 +465,9 @@ static cw_action_in_t actions_in[] = {
 		.capwap_state = CW_STATE_RUN, 
 		.msg_id= CW_MSG_CHANGE_STATE_EVENT_REQUEST,
 		.elem_id = CW_ELEM_RADIO_OPERATIONAL_STATE,
-		.item_id = CW_RADIO_OPER_STATE,
-		.start = cw_in_radio_operational_state,
+		.item_id = CW_RADIOITEM_OPER_STATE,
+//		.start = cw_in_radio_operational_state,
+		.start = cw_in_radio_generic,
 		.min_len=3,
 		.max_len=3,
 		.mand = 0
@@ -493,6 +494,7 @@ static cw_action_in_t actions_in[] = {
 	{
 		.capwap_state = CW_STATE_RUN,
 		.msg_id = CW_MSG_ECHO_REQUEST,
+		.item_id = "echoreq"
 	}
 	,
 
@@ -525,7 +527,16 @@ static cw_action_in_t actions_in[] = {
 	}
 	,
 
-		
+	/* --------------------------------------------------------------------------
+	 * Configuration Update Response 
+	 */
+	{
+		.capwap_state=CW_STATE_RUN, 
+		.msg_id = CW_MSG_CONFIGURATION_UPDATE_RESPONSE, 
+	}
+	,
+
+	
 	
 	/* End of list */
 	{0, 0}
@@ -571,6 +582,8 @@ static cw_action_out_t actions_out[]={
 		.mand = 1
 	}
 	,
+
+
 
 
 
@@ -634,6 +647,15 @@ static cw_action_out_t actions_out[]={
 	,
 
 
+
+	{
+		.msg_id = CW_MSG_JOIN_RESPONSE,
+		.elem_id = CW_ELEM_AC_IPV4_LIST,
+		.out = capwap_out_ac_ip_list
+
+	}
+	,
+
 	/* --------------------------------------------------------------------------
 	 * Configuration Status Response Message - OUT
 	 */
@@ -658,6 +680,13 @@ static cw_action_out_t actions_out[]={
 	}
 	,
 
+	{
+		.msg_id = CW_MSG_CONFIGURATION_STATUS_RESPONSE,
+		.elem_id = CW_ELEM_AC_IPV4_LIST,
+		.out = capwap_out_ac_ip_list
+
+	}
+	,
 
 
 	
@@ -692,6 +721,45 @@ static cw_action_out_t actions_out[]={
 		.mand = 1
 	}
 	,
+
+
+	/* --------------------------------------------------------------------------
+	 * Configuration Update Request - OUT
+	 */
+
+	/* Location Data */		
+	{
+		.msg_id = CW_MSG_CONFIGURATION_UPDATE_REQUEST,
+		.elem_id = CW_ELEM_LOCATION_DATA,
+		.item_id = CW_ITEM_LOCATION_DATA,
+	 	.out = cw_out_generic, 
+		.get = cw_out_get_outgoing,
+		.mand = 0
+	}
+	,
+
+	/* WTP Name */		
+	{
+		.msg_id = CW_MSG_CONFIGURATION_UPDATE_REQUEST,
+		.elem_id = CW_ELEM_WTP_NAME,
+		.item_id = CW_ITEM_WTP_NAME,
+	 	.out = cw_out_generic, 
+		.get = cw_out_get_outgoing,
+		.mand = 0
+	}
+	,
+
+	/* Radio Administrative State -  OUT */
+	{
+		.msg_id = CW_MSG_CONFIGURATION_UPDATE_REQUEST,
+		.elem_id = CW_ELEM_RADIO_ADMINISTRATIVE_STATE,
+		.item_id = CW_RADIOITEM_ADMIN_STATE,
+		.out = cw_out_radio_generic,		
+		.mand = 0
+	}
+	,
+
+
 
 
 	{0,0}

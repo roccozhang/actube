@@ -88,6 +88,9 @@ cw_aciplist_t cw_select_ac(struct conn *conn, mbag_t discs)
 		cw_aciplist_t acips =
 		    mbag_get_mavl(ac, CW_ITEM_CAPWAP_CONTROL_IP_ADDRESS_LIST);
 
+		if (!acips)
+			continue;
+
 		/* for each IP from the current AC add it to the result list
 		 * and give it the priority whe have determined */
 		DEFINE_AVLITER(i2, acips);
@@ -101,7 +104,7 @@ cw_aciplist_t cw_select_ac(struct conn *conn, mbag_t discs)
 		
 			/* we missuse the wtp_count to sort by 
 			 * priority and wp_count */	
-			n->wtp_count |= prio<<16; 
+			n->index |= prio<<16; 
 
 			cw_aciplist_del(resultlist,n);
 			cw_aciplist_add(resultlist,n);
@@ -220,6 +223,19 @@ static int cw_run_discovery(struct conn *conn, const char *acaddr)
 		sock_set_dontfrag(sockfd, 0);
 
 		sock_copyaddr(&conn->addr, res->ai_addr);
+
+		
+		if (conf_ip){		
+			struct sockaddr bind_address;
+			sock_strtoaddr(conf_ip,&bind_address); 
+			int brc = bind(sockfd,&bind_address,sock_addrlen(&bind_address));
+			if (brc<0) {
+				cw_log(LOG_ERR,"Can't bind to %s",sock_addr2str(&bind_address));
+				return 0;
+			}
+		}
+
+
 		conn->sock = sockfd;
 		conn->readfrom = conn_recvfrom_packet;
 

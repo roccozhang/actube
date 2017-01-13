@@ -78,6 +78,7 @@
 extern const char CW_ITEM_IDLE_TIMEOUT[];
 extern const char CW_ITEM_DISCOVERY_TYPE[];
 extern const char CW_ITEM_WTP_NAME[];
+extern const char CW_ITEM_WTP_FALLBACK[];
 
 /*
 extern const char CW_ITEM_WTP_BOARD_VENDOR,
@@ -129,7 +130,7 @@ extern const char CW_ITEM_AC_TIMESTAMP[];
 extern const char CW_ITEM_STATISTICS_TIMER[];
 extern const char CW_ITEM_WTP_REBOOT_STATISTICS[];
 extern const char CW_ITEM_IMAGE_IDENTIFIER[];
-extern const char CW_ITEM_AC_HASH_VALUE[];
+//extern const char CW_ITEM_AC_HASH_VALUE[];
 
 extern const char CW_ITEM_AC_NAME_WITH_PRIORITY[];
 extern const char CW_ITEM_MAXIMUM_MESSAGE_LENGTH[];
@@ -137,7 +138,7 @@ extern const char CW_ITEM_CAPWAP_TRANSPORT_PROTOCOL[];
 
 
 	/* CIPWAP and Cisco */
-extern const char CW_ITEM_WTP_GROUP_NAME[];
+//extern const char CW_ITEM_WTP_GROUP_NAME[];
 
 
 	/* Other Items */
@@ -176,6 +177,12 @@ extern const char CW_ITEM_RADIO_INFOS[];
 extern const char CW_ITEM_ECN_SUPPORT[];
 
 
+//extern const char CW_ITEM_SSH_ENABLE[];
+//extern const char CW_ITEM_TELNET_ENABLE[];
+
+
+
+
 #define CW_ITEM_REBOOT_COUNT "reboot_count"
 #define CW_ITEM_REBOOT_AC_INITIATED_COUNT "ac_initiated"
 #define CW_ITEM_REBOOT_LINK_FAILURE_COUNT "link_failure"
@@ -186,7 +193,13 @@ extern const char CW_ITEM_ECN_SUPPORT[];
 #define CW_ITEM_REBOOT_LAST_FAILURE_TYPE "last_failure"
 
 
+extern const char CW_RADIOITEM_ADMIN_STATE[];
+extern const char CW_RADIOITEM_OPER_STATE[];
+extern const char CW_RADIOITEM_DECRYPTION_ERROR_REPORT_PERIOD[];
+
 
 extern struct cw_itemdef capwap_itemdefs[];
+extern struct cw_itemdef capwap_radioitemdefs[];
+
 
 #endif

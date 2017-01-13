@@ -10,6 +10,8 @@ const char * lw_cisco_id_to_str(int elem_id)
 			return "Path MTU";
 		case LW_CISCO_MWAR_HASH_VALUE:
 			return "MWAR Hash Value";
+		case LW_CISCO_MWAR_HASH_VALUE_1:
+			return "MWAR Hah Value 1";			
 		case LW_CISCO_AP_USERNAME_PASSWORD:
 			return "AP Username and Password";
 		case LW_CISCO_AC_IP_ADDR_WITH_INDEX:
@@ -37,7 +39,13 @@ const char * lw_cisco_id_to_str(int elem_id)
 			return "Primed Join Timeout";			
 
 		case LW_CISCO_PRIMED_DISCOVERY_TIMEOUT:
-			return "Primed Discovery Timeout";			
+			return "Primed Discovery Timeout";
+
+		case LW_CISCO_RAD_EXTENDED_CONFIG:
+			return "RAD Extended Config";
+
+		case LW_CISCO_MANAGER_IP_ADDR:
+			return "MAnager IP Address";
 
 		default: 
 			return "Unknown";

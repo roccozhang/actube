@@ -66,7 +66,8 @@ UTILOBJS= \
 	cw_read_wtp_descriptor.o \
 	cw_read_wtp_descriptor_7.o \
 	cw_read_wtp_descriptor_versions.o \
-	cw_read_descriptor_subelems.o
+	cw_read_descriptor_subelems.o \
+	cw_out_80211_supported_rates.o
 
 MAVLOBJS= \
 	mavl_del.o \
@@ -82,13 +83,16 @@ MAVLOBJS= \
 	mavl_merge.o \
 	mavl_create_conststr.o \
 	mlist.o \
+	cw_load_file.o \
+	cw_save_file.o \
+
+
+
+FORMATOBJS = \
 	format_is_utf8.o \
 	format_dot11_fc.o \
-	cw_load_file.o \
-	cw_save_file.o
 
-#	cw_foreach_msgelem.o \
-#	mavl.o \
+#	lw_readelem_vendor_specific.o \
 
 
 # LWAPP objs
@@ -96,12 +100,13 @@ LWAPPOBJS = \
 	lw_checksum.o \
 	lw_put_ac_descriptor.o \
 	lw_put_cisco_path_mtu.o \
-	lw_readelem_vendor_specific.o \
 	lw_elem_id_to_str.o \
 	lw_msg_id_to_str.o \
 	lw_cisco_id_to_str.o \
 	lw_put_sockaddr.o \
-	lw_put_image_data.o
+	lw_put_image_data.o \
+	lw_in_vendor_specific.o
+
 
 	#lw_put_80211_wtp_wlan_radio_configuration.o \
 #	lw_readelem_wtp_name.o \
@@ -111,8 +116,8 @@ LWAPPOBJS = \
 
 
 # LWAPP cisco vendor specific objs
-LWAPPCISCOOBJS = \
-	lw_addelem.o
+#//#LWAPPCISCOOBJS = \
+#	lw_addelem.o
  
 
 # cw_tohex.o\
@@ -121,6 +126,7 @@ LWAPPCISCOOBJS = \
 #	   hdr_print.o \
 
 CAPWAPOBJS= \
+	cw_iplist.o \
 	   aciplist.o \
 	   lwmsg_init.o \
 	cw_cisco_id_to_str.o\
@@ -147,13 +153,13 @@ CAPWAPOBJS= \
 	cw_in_check_img_data_resp.o \
 	cw_in_check_generic_resp.o \
 	cw_in_check_generic_req.o \
+	cw_in_80211_mac_operation.o \
+	cw_read_80211_mac_operation.o \
 	cw_out_generic.o \
 	cw_out_wtp_descriptor.o \
 	cw_out_wtp_reboot_statistics.o \
 	cw_in_wtp_reboot_statistics.o\
 	cw_in_cisco_image_identifier.o\
-	cw_out_radio_operational_states.o\
-	cw_out_radio_operational_states_7.o\
 	cw_put_radio_operational_states.o \
 	cw_put_ac_status.o \
 	cw_in_ac_descriptor.o\
@@ -166,17 +172,31 @@ CAPWAPOBJS= \
 	cw_in_capwap_local_ipv6_address.o \
 	cw_in_radio_administrative_state.o \
 	cw_in_radio_administrative_state_wtp.o \
-	cw_in_radio_operational_state.o\
+	cw_radio_set_admin_state.o \
+	cw_put_elem_radio_administrative_state.o\
+	cw_put_elem_radio_operational_state.o \
+	cw_out_radio_administrative_states.o\
 	strheap.o \
 	cw_check_missing_mand.o \
 	md5sum.o \
 	format.o \
-	cw_in_cisco_add_wlan.o \
-	dot11.o
+#	action_sources.o \
+#	cw_in_cisco_add_wlan.o 
+#	cw_in_radio_operational_state.o\
+
+DOT11OBJS = \
+	dot11.o \
+	dot11_beacon.o
 
 #	cw_out_ac_descriptor.o \
 
 
+CAPWAP80211OBJS=\
+		capwap80211_items.o\
+		capwap80211_type_rateset.o \
+
+#	cw_out_radio_operational_states.o\
+#	cw_out_radio_operational_states_7.o\
 
 #
 # SSL objects
@@ -216,6 +236,11 @@ CONNOBJS= conn_create.o \
 	conn_create_noq.o \
 	conn_init.o \
 	conn_send_packet.o \
+	conn_send_data_packet.o \
+	netconn.o \
+	cw_init_data_keep_alive_msg.o \
+	conn_clear_upd.o
+
 
 #	conn_send_msg.o
 #conn_get_message.o  \
@@ -240,12 +265,6 @@ BSTROBJS= bstr_create.o \
 
 FRAGOBJS=fragman.o
 
-#	cw_in_wtp_descriptor.o \
-#	capwap_80211_actions_wtp.o \
-#	capwap_80211_actions_ac.o \
-#	capwap_actions_ac.o \
-	#capwap_actions_wtp.o \
-
 CWACTION=action.o \
 	cw_in_generic.o \
 	cw_in_generic2.o \
@@ -253,8 +272,6 @@ CWACTION=action.o \
 	cw_out_ac_name_with_priority.o \
 	cw_in_ac_name_with_priority.o \
 	cw_out_image_data.o \
-	cipwap_actions_ac.o \
-	cipwap_actions_wtp.o \
 	cipwap_strings_elem.o \
 	capwap_strings_result.o\
 	capwap_strings_board.o \
@@ -264,6 +281,19 @@ CWACTION=action.o \
 	capwap_action_helpers.o \
 	cw_put_image_data.o \
 	cisco.o \
+	radio.o \
+	cw_in_radio_generic.o\
+	cw_out_radio_generic.o \
+	cw_out_radio_info.o \
+	capwap_items.o \
+	item.o \
+	mod.o
+
+#	cw_process_msg.o \
+#	item_strings.o \
+#
+
+MBAGOBJS = \
 	mbag.o\
 	mbag_type_word.o\
 	mbag_type_byte.o\
@@ -273,14 +303,11 @@ CWACTION=action.o \
 	mbag_type_bstr16.o\
 	mbag_type_mbag.o\
 	mbag_set_from_buf.o\
-	radio.o \
-	cw_out_radio_info.o \
-	capwap_items.o \
-	item.o \
-	mod.o
+	mbag_type_str.o \
+	mbag_type_ptr.o \
+	mbag_type_data.o \
+	mbag_get_upd.o
 
-#	cw_process_msg.o \
-#	item_strings.o \
 
 
 
@@ -290,6 +317,10 @@ OBJS=$(CONNOBJS) $(FRAGOBJS) $(SOCKOBJS) $(CAPWAPOBJS) $(WTPINFOOBJS) \
 	$(LWAPPCISCOOBJS) \
 	$(CWACTION) \
 	$(MAVLOBJS) \
+	$(FORMATOBJS) \
+	$(DOT11OBJS)  \
+	$(MBAGOBJS) \
+	$(CAPWAP80211OBJS)
 
 #include $(OBJS:.o=.d)
 
@@ -356,7 +387,7 @@ clean:
 clean_deps:
 	$(DEPS) 
 	
-deps: $(SRCS) 
-	$(CC) -MD -E $(SRCS) $(CFLAGS) >/dev/null
+deps:  
+	$(CC) -MM -E *.c $(CFLAGS) > .depend
 
--include $(DEPS)
+-include .depend

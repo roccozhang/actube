@@ -31,8 +31,6 @@
 
 #include "fragman.h"
 #include "cwmsg.h"
-//#include "wtpinfo.h"
-
 
 #include "action.h"
 
@@ -42,12 +40,32 @@
 #include "mbag.h"
 #include "mod.h"
 
+
+struct cw_action_in;
+
+#define CONN_MAX_MSG_LENGTH 65536
+
+
+#include "netconn.h"
+#include "connlist.h"
+
+
 /**
  * Connection Object
  */ 
 struct conn {
 	int sock;
 	struct sockaddr_storage addr;
+
+	struct connlist * connlist;
+
+
+	int data_sock;
+	struct sockaddr_storage data_addr;
+
+	struct netconn * data_nc;
+
+
 	int recv_timeout;
 
 	mbag_t outgoing;
@@ -56,8 +74,12 @@ struct conn {
 	mbag_t local;
 
 	mbag_t radios;
-	uint8_t radio_create;
+	mbag_t radios_upd;
 	mbag_t config;
+	mbag_t config_upd;
+
+
+	uint8_t session_id[16];
 
 
 	/** base_mac */
@@ -97,10 +119,10 @@ struct conn {
 	struct cwmsg resp_msg;
 
 	/** Buffer for outgoing request messages */
-	uint8_t req_buffer[65536];
+	uint8_t req_buffer[CONN_MAX_MSG_LENGTH];
 
 	/** Buffer for outgoing response messages */
-	uint8_t resp_buffer[65536];
+	uint8_t resp_buffer[CONN_MAX_MSG_LENGTH];
 	
 		
 
@@ -115,9 +137,15 @@ struct conn {
 	int (*recv_packet_peek) (struct conn *, uint8_t *, int);
 	int (*send_packet) (struct conn *, const uint8_t *, int);
 
+//	int (*recv_data_packet) (struct conn *, uint8_t *,int);
+//	int (*send_data_packet) (struct conn *, const uint8_t *, int);
+	
+
 	int (*readfrom) (struct conn *, uint8_t *, int, struct sockaddr_storage *);
 	int (*read) (struct conn *, uint8_t *, int);
 	int (*write) (struct conn *, const uint8_t *, int);
+
+//	int (*write_data) (struct conn *, const uint8_t *, int);
 
 	/* optional packet queue */
 	uint8_t **q;
@@ -148,7 +176,6 @@ struct conn {
 	uint8_t dtls_cookie[8];
 
 	int dtls_verify_peer;
-
 	int dtls_mtu;
 
 	uint8_t dtls_buffer[2048];
@@ -176,11 +203,6 @@ struct conn {
 	int strict_capwap;
 	int strict_hdr;
 
-/*
-	int (*request_handler) (void *);
-	void *request_handler_param;
-*/
-
 
 	int (*process_packet)(struct conn *conn, uint8_t * packet, int len,struct sockaddr *from);
 	int (*process_message)(struct conn *conn, uint8_t * rawmsg, int rawlen,
@@ -189,6 +211,14 @@ struct conn {
 	
 	int detected;
 	void  * mods;
+
+
+	int (*msg_start)(struct conn *conn,struct cw_action_in *a,uint8_t*data,int len,struct sockaddr *from);
+	int (*msg_end)(struct conn *conn,struct cw_action_in *a,uint8_t*elem,int len,struct sockaddr *from);
+
+	int (*elem_end)(struct conn *conn,struct cw_action_in *a,int afrc,uint8_t*elem,int len,struct sockaddr *from);
+
+//	void (*actions_registered)(struct conn *conn);
 
 };
 
@@ -213,6 +243,8 @@ extern int process_message(struct conn *conn, uint8_t * rawmsg, int rawlen,
 extern uint8_t *conn_get_message(struct conn *conn);
 
 extern int conn_send_packet(struct conn *conn, const uint8_t * buffer, int len);
+extern int conn_send_data_packet(struct conn * conn, const uint8_t * buffer, int len);
+
 extern void conn_destroy(struct conn *conn);
 
 uint8_t *conn_q_get_packet(struct conn *conn);
@@ -230,25 +262,6 @@ extern struct cwrmsg *conn_get_response(struct conn *conn);
 #define conn_get_last_seqnum(conn) (conn->seqnum&0xff)
 
 
-/* connlist stuff */
-#include "avltree.h"
-struct connlist {
-/*	struct conn ** connlist; */
-
-	struct avltree *t;
-	int len;
-	pthread_mutex_t connlist_mutex;
-};
-
-
-struct connlist *connlist_create(int len);
-void connlist_lock(struct connlist *cl);
-void connlist_unlock(struct connlist *cl);
-void conlist_destroy(struct connlist *cl);
-struct conn *connlist_get(struct connlist *cl, const struct sockaddr *addr);
-struct conn *connlist_add(struct connlist *cl, struct conn *conn);
-void connlist_remove(struct connlist *cl, struct conn *conn);
-void connlist_destroy(struct connlist *cl);
 void conn_q_add_packet(struct conn *conn, uint8_t * packet, int len);
 
 struct image_identifier;
@@ -277,5 +290,6 @@ int conn_send_msg(struct conn * conn, uint8_t *rawmsg);
 int cw_read_from(struct conn * conn);
 
 
+void conn_clear_upd(struct conn *conn, int merge);
 
-#endif				/* __CONLIST_H */
+#endif	/* __CONN_H */

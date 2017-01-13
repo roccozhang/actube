@@ -108,7 +108,7 @@ const char * cw_cisco_id_to_str(int elem_id)
 		case CW_CISCO_SPAM_DOMAIN_SECRET:
 			return "SPAM Domain Secret";
 
-		case CW_CISCO_SPAM_AP_LED_STATE:
+		case CW_CISCO_AP_LED_STATE_CONFIG:
 			return "SPAM AP LED State";
 		case CW_CISCO_AP_RETRANSMIT_PARAM:
 			return "AP Retransmit Param";
@@ -139,6 +139,23 @@ const char * cw_cisco_id_to_str(int elem_id)
 
 		case CW_CISCO_CAPWAP_TIMERS:
 			return "Capwap Timers";
+
+		case CW_CISCO_AP_CORE_DUMP:
+			return "AP Core Dump";
+
+		case CW_CISCO_AIRSPACE_CAPABILITY:
+			return "Airspace Capability";	
+		case CW_CISCO_BCAST_SSID_MODE:
+			return "Broadcast SSID Mode";
+		case CW_CISCO_AP_LED_FLASH_CONFIG:
+			return "Spam AP LED Flash Config";
+
+		case CW_CISCO_OPER_STATE_DETAIL_CAUSE:
+			return "Radio Oper State Detail Cause";
+
+		case CW_CISCO_DOT11_CONFIG_CHECKER:
+			return "Dot11 Config Checker";
+
 		
 		default:
 			return "Unknown";

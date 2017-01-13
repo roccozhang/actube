@@ -6,16 +6,26 @@
 #include "cw/capwap_items.h"
 #include "cw/conn.h"
 #include "cw/item.h"
+#include "cw/mbag.h"
 
 #include "conf.h"
 
 static sqlite3 *handle;
 
 
-const char * init_tables = "\
+static const char * init_tables = "\
 	CREATE TABLE IF NOT EXISTS acs (acid TEXT PRIMARY KEY, acname TEXT, lastseen TIMESTAMP); \
+	CREATE TABLE IF NOT EXISTS radios (\
+		wtpid TEXT,\
+		rid TEXT,\
+		key TEXT,\
+		sub_key,\
+		val TEXT, \
+		upd INTEGER, \
+		PRIMARY KEY (wtpid,rid,key,sub_key)\
+	);\
 	CREATE TABLE IF NOT EXISTS acips (acid TEXT,ip TEXT); \
-	CREATE TABLE IF NOT EXISTS wtps (wtpid TEXT PRIMARY KEY, wtp_name TEXT,lastseen TIMESTAMP); \
+	CREATE TABLE IF NOT EXISTS wtps (wtpid TEXT PRIMARY KEY, acid TEXT,lastseen TIMESTAMP); \
 	CREATE TABLE IF NOT EXISTS wtpprops (\
 		wtpid TEXT NOT NULL,\
 		id TEXT NOT NULL,\
@@ -75,9 +85,14 @@ int db_init()
 
 static sqlite3_stmt * ping_stmt;
 static sqlite3_stmt * put_wtp_prop_stmt;
+
+
 static sqlite3_stmt * get_tasks_stmt;
 
+static sqlite3_stmt * stmt_get_radio_tasks;
 
+static sqlite3_stmt * stmt_ping_wtp;
+static sqlite3_stmt * stmt_put_radio_prop;
 
 int db_start()
 {
@@ -86,7 +101,7 @@ int db_start()
 	const char *sql="";
 
 	sqlite3_stmt *stmt;
-	int rc = sqlite3_prepare_v2(handle, "INSERT INTO acs (acid,acname) VALUES (?,?);",-1,&stmt,0);
+	int rc = sqlite3_prepare_v2(handle, "INSERT OR REPLACE INTO acs (acid,acname) VALUES (?,?);",-1,&stmt,0);
 	if (rc)
 		goto errX;
 
@@ -110,6 +125,22 @@ int db_start()
 		goto errX;
 
 
+	sql = "INSERT OR REPLACE INTO radios\
+	       (wtpid,rid,key,sub_key,val,upd)\
+	       VALUES (?,?,?,?,?,0)";
+
+	rc = sqlite3_prepare_v2(handle, sql,-1, &stmt_put_radio_prop,0);
+	if (rc) 
+		goto errX;
+
+
+	/* Prepare WTP ping statement */
+	sql = "INSERT OR REPLACE INTO wtps  (wtpid,acid,lastseen) VALUES(?,?,datetime('now'))";
+	rc = sqlite3_prepare_v2(handle, sql,-1, &stmt_ping_wtp,0);
+	if (rc) 
+		goto errX;
+
+
 	
 	sql = "SELECT wtpid,id,sub_id,val FROM wtpprops WHERE upd>0 AND wtpid=?";
 	rc = sqlite3_prepare_v2(handle, sql,-1, &get_tasks_stmt,0);
@@ -117,6 +148,11 @@ int db_start()
 		goto errX;
 
  
+	sql = "SELECT wtpid,rid,key,sub_key,val FROM radios WHERE upd>0 AND wtpid=?";
+	rc = sqlite3_prepare_v2(handle, sql,-1, &stmt_get_radio_tasks,0);
+	if (rc) 
+		goto errX;
+
 
 
 	return 1;
@@ -128,6 +164,67 @@ errX:
 
 }
 
+void db_put_radio_prop(const char *wtp_id,const char *rid, const char * key,const char *sub_key,const char * val)
+{
+	int rc=0;
+
+//	DBGX("Putting %s/%s:%s",id,sub_id,val);
+//	       (wtpid,rid,key,sub_key,val,upd)
+
+	sqlite3_reset(stmt_put_radio_prop);
+	sqlite3_clear_bindings(stmt_put_radio_prop);
+
+	if(sqlite3_bind_text(stmt_put_radio_prop,1,wtp_id,-1,SQLITE_STATIC))
+		goto errX;
+	
+	if(sqlite3_bind_text(stmt_put_radio_prop,2,rid,-1,SQLITE_STATIC))
+		goto errX;
+
+
+
+	if (sqlite3_bind_text(stmt_put_radio_prop,3,key,-1,SQLITE_STATIC))
+		goto errX;
+
+
+	if (!sub_key) 
+		sub_key=CW_ITEM_NONE;
+
+	if (sqlite3_bind_text(stmt_put_radio_prop,4,sub_key,-1,SQLITE_STATIC))
+		goto errX;
+
+	if (sqlite3_bind_text(stmt_put_radio_prop,5,val,-1,SQLITE_STATIC))
+		goto errX;
+
+	
+
+//	if (sqlite3_bind_int(put_wtp_prop_stmt,5,0))
+//		goto errX;
+
+//	cw_dbg(DBG_X,"Her I am already, next is step");
+
+	rc = sqlite3_step(stmt_put_radio_prop);
+	if (rc != SQLITE_DONE)
+		goto errX;
+
+
+//	cw_dbg(DBG_X,"SQL schould be fine");
+
+	return;
+errX:
+//	cw_dbg (DBG_X, "Iam on err %d\n",rc);
+
+
+	if (rc) {
+		cw_log(LOG_ERR,"Can't update database with WTP props: %d - %s",
+			rc,sqlite3_errmsg(handle));
+	}
+
+}
+
+
+
+
+
 void db_ping()
 {
 	int rc = sqlite3_step(ping_stmt);
@@ -136,11 +233,34 @@ void db_ping()
 	}
 }
 
+
+void db_ping_wtp(const char *wtpid,const char *acid)
+{
+	int rc=0;
+	sqlite3_reset(stmt_ping_wtp);
+	sqlite3_clear_bindings(stmt_ping_wtp);
+	if(sqlite3_bind_text(stmt_ping_wtp,1,wtpid,-1,SQLITE_STATIC))
+		goto errX;
+	
+	if(sqlite3_bind_text(stmt_ping_wtp,2,acid,-1,SQLITE_STATIC))
+		goto errX;
+
+	rc = sqlite3_step(stmt_ping_wtp);
+errX:
+	if (rc!=SQLITE_DONE) {
+		cw_log(LOG_ERR,"Can't ping database for WTP: %d - %s",
+			rc,sqlite3_errmsg(handle));
+	}
+
+
+
+}
+
 void db_put_wtp_prop(const char *wtp_id,const char * id,const char *sub_id,const char * val)
 {
-	int rc;
+	int rc=0;
 
-//DBGX("Putting %s/%s:%s",id,sub_id,val);
+//	DBGX("Putting %s/%s:%s",id,sub_id,val);
 
 	sqlite3_reset(put_wtp_prop_stmt);
 	sqlite3_clear_bindings(put_wtp_prop_stmt);
@@ -164,11 +284,20 @@ void db_put_wtp_prop(const char *wtp_id,const char * id,const char *sub_id,const
 	if (sqlite3_bind_int(put_wtp_prop_stmt,5,0))
 		goto errX;
 
+//	cw_dbg(DBG_X,"Her I am already, next is step");
 
-	if (sqlite3_step(put_wtp_prop_stmt))
+	rc = sqlite3_step(put_wtp_prop_stmt);
+	if (rc != SQLITE_DONE)
 		goto errX;
+
+
+//	cw_dbg(DBG_X,"SQL schould be fine");
+
 	return;
 errX:
+//	cw_dbg (DBG_X, "Iam on err %d\n",rc);
+
+
 	if (rc) {
 		cw_log(LOG_ERR,"Can't update database with WTP props: %d - %s",
 			rc,sqlite3_errmsg(handle));
@@ -188,16 +317,12 @@ mavl_conststr_t db_get_update_tasks(struct conn * conn,const char * wtpid)
 		return NULL;
 
 
+	int rc=0;
 
 
 	if(sqlite3_bind_text(get_tasks_stmt,1,wtpid,-1,SQLITE_STATIC))
 		goto errX;
 
-	int rc;
-
-
-
-	//rc = sqlite3_step(get_tasks_stmt);
 	while (SQLITE_ROW == sqlite3_step(get_tasks_stmt)) {
 
 		int ii;
@@ -211,7 +336,6 @@ mavl_conststr_t db_get_update_tasks(struct conn * conn,const char * wtpid)
 
 		const char *id =  (const char*)sqlite3_column_text(get_tasks_stmt,1);
 		if (!id) {
-			//DBGX("::::::::::::::::::::::::::::::::::::::::::::::::::::NULL ID!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!","");
 			continue;
 		}
 
@@ -227,7 +351,7 @@ mavl_conststr_t db_get_update_tasks(struct conn * conn,const char * wtpid)
 			continue;	
 		}
 
-		uint8_t data[2048];
+		//uint8_t data[2048];
 
 		if (!cwi->type->from_str) {
 			cw_log(LOG_ERR,"Can't convert from string %s/%s - No method defined.",id,sub_id);
@@ -245,7 +369,6 @@ mavl_conststr_t db_get_update_tasks(struct conn * conn,const char * wtpid)
 
 	if (r->count)
 		return r;
-
 	
 	mavl_destroy(r);
 	return NULL;
@@ -266,5 +389,97 @@ errX:
 }
 
 
+
+mavl_conststr_t db_get_radio_tasks(struct conn * conn,const char * wtpid)
+{
+
+//cw_dbg(DBG_X,"Get Radio Tasks for  %s",wtpid);
+
+	sqlite3_reset(stmt_get_radio_tasks);
+	sqlite3_clear_bindings(stmt_get_radio_tasks);
+
+	mavl_conststr_t r = mavl_create_conststr();
+	if (!r)
+		return NULL;
+
+
+	int rc=0;
+
+
+	if(sqlite3_bind_text(stmt_get_radio_tasks,1,wtpid,-1,SQLITE_STATIC))
+		goto errX;
+
+	while (SQLITE_ROW == sqlite3_step(stmt_get_radio_tasks)) {
+
+		int ii;
+		//DBGX("-----------------------------------------------------","");
+		for (ii=0; ii<6; ii++){
+
+			DBGX("CVALL: %s",(const char*)sqlite3_column_text(stmt_get_radio_tasks,ii));
+
+
+		}
+		const char *strrid=  (const char*)sqlite3_column_text(stmt_get_radio_tasks,1);
+
+		const char *id =  (const char*)sqlite3_column_text(stmt_get_radio_tasks,2);
+		if (!id) {
+			continue;
+		}
+
+		const char *sub_id =  (const char*)sqlite3_column_text(stmt_get_radio_tasks,3);
+
+		const char *val =  (const char*)sqlite3_column_text(stmt_get_radio_tasks,4);
+
+		//DBGX("ID: (%s), SubID (%s), Val (%s)",id,sub_id,val);
+	
+		const struct cw_itemdef * cwi = cw_itemdef_get(conn->actions->radioitems,id,sub_id);
+		if (!cwi) {
+			DBGX("No item definition found for: %s/%s",id,sub_id);
+			continue;	
+		}
+
+
+		if (!cwi->type->from_str) {
+			cw_log(LOG_ERR,"Can't convert from string %s/%s - No method defined.",id,sub_id);
+			continue;
+		}
+
+
+		mbag_item_t * i = cwi->type->from_str(val);
+		i->id=cwi->id;
+
+		int rid = atoi(strrid);			
+		cw_dbg(DBG_X,"RID: %d",rid);
+
+
+		mbag_t radio = mbag_i_get_mbag_c(conn->radios_upd,rid,mbag_create);
+		mbag_set(radio,i);
+
+
+		//mbag_set(conn->outgoing,i);
+	
+		mavl_add(r,(void*)cwi->id);
+	}
+
+	if (r->count)
+		return r;
+	
+	mavl_destroy(r);
+	return NULL;
+
+
+errX:
+	if (rc) {
+		cw_log(LOG_ERR,"Can't get tasks: %d - %s",
+			rc,sqlite3_errmsg(handle));
+	}
+
+	if (r)
+		mavl_destroy(r);
+		
+
+	return NULL;
+
+}
 
 

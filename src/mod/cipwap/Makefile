@@ -1,6 +1,11 @@
 
 OBJS=\
-	mod_cipwap_ac.o
+	mod_cipwap_ac.o \
+	mod_cipwap_wtp.o \
+	cipwap_actions_ac.o \
+	cipwap_actions_wtp.o \
+	cipwap_items.o \
+
 
 NAME=libcipwap.a
 

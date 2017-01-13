@@ -1,6 +1,4 @@
 
-
-
 #include "cw.h"
 #include "capwap_items.h"
 
@@ -8,42 +6,7 @@
 #include "log.h"
 
 
-int cw_put_item(uint8_t * dst, struct mbag_item *item)
-{
-	if (MBAG_STR == item->type ){
-		return cw_put_data(dst, item->data, strlen((char *) item->data));
-	}
-
-	if (MBAG_BYTE == item->type){
-		return cw_put_byte(dst, item->byte);
-	}
-	if (MBAG_WORD == item->type){
-		return cw_put_word(dst, item->word);
-	}
-	if (MBAG_DWORD == item->type){
-		return cw_put_dword(dst, item->dword);
-	}
-	if (MBAG_BSTR  == item->type) {
-		return cw_put_bstr(dst, item->data);
-	}
-
-	if ( MBAG_BSTR16 == item->type)
-		return cw_put_bstr16(dst,item->data);
-
-	if (MBAG_VENDORSTR == item->type)
-	{
-		int l=0;
-		l+=cw_put_dword(dst, bstrv_get_vendor_id(item->data));
-		l+=cw_put_data(dst+4, bstrv_data(item->data),bstrv_len(item->data));
-		return l;
-	}
-	cw_log(LOG_ERR,"No method to put items of type %d",item->type);
-
-
-	return 0;
-}
-
-int cw_out_generic(struct conn *conn, struct cw_action_out *a, uint8_t * dst)	// ,struct mbag_item * item) 
+int cw_out_generic(struct conn *conn, struct cw_action_out *a, uint8_t * dst)	
 {
 
 
@@ -67,10 +30,11 @@ int cw_out_generic(struct conn *conn, struct cw_action_out *a, uint8_t * dst)	//
 		}
 		if (a->mand) {
 			cw_log(LOG_ERR,
-			       "Can't put mandatory element %s%d - (%s) into %s. No value found.",
+			       "Can't put mandatory element %s %d - (%s) into %s. No value for '%s' found.",
 				vendor,
 			       a->elem_id, cw_strelemp(conn->actions, a->elem_id)
 			       , cw_strmsg(a->msg_id)
+			       , a->item_id
 			    );
 		}
 		else{
@@ -82,7 +46,7 @@ int cw_out_generic(struct conn *conn, struct cw_action_out *a, uint8_t * dst)	//
 		}
 		return 0;
 	} else {
-		len = cw_put_item(dst + start, item);
+		len = cw_put_mbag_item(dst + start, item);
 	}
 
 

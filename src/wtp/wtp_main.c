@@ -12,6 +12,7 @@
 #include "cw/acpriolist.h"
 //#include "cw/capwap_80211.h"
 #include "cw/radio.h"
+#include "cw/capwap80211_items.h"
 
 #include "cw/mod.h"
 
@@ -36,29 +37,6 @@ struct conn *the_conn;
 struct cw_actiondef capwap_actions;
 
 
-
-int handle_update_req(struct conn *conn, struct cw_action_in *a, uint8_t * data,
-		      int len, struct sockaddr *from)
-{
-	MAVLITER_DEFINE(it, conn->incomming);
-
-	mavliter_foreach(&it) {
-		mbag_item_t *item = mavliter_get(&it);
-
-//		printf("MBAG ITEM GOT: %s\n",item->id);
-		if (item->id == CW_ITEM_LOCATION_DATA) {
-			printf("Location Data %s\n",mbag_get_str(conn->incomming,CW_ITEM_LOCATION_DATA,"ups"));
-			
-		}
-
-	}
-	cw_dbg(DBG_INFO, "Saving configuration ...");
-	cfg_to_json();
-
-//	exit(0);
-	return 0;
-
-}
 
 
 const char *t = CW_ITEM_WTP_NAME;
@@ -101,47 +79,44 @@ static void sig_handler(int sig)
 	exit(0);
 }
 
+#include "cw/dot11.h"
+#include "cw/format.h"
+
+#include "cw/capwap80211_types.h"
 
 int main()
 {
+
 	signal (SIGINT, sig_handler);
-
-
 
 	wtpconf_preinit();
 
 	if (!read_config("./wtp_uci.conf")) {
 		return 1;
 	}
-//      cw_dbg_opt_level = conf_dbg_level;
+//	cw_dbg_opt_level = conf_dbg_level;
 
-	wtpconf_init();
+
+	if (!wtpconf_init()){
+		return 1;
+	};
 
 	cw_dbg_opt_display = DBG_DISP_ASC_DMP | DBG_DISP_COLORS;
 
 	dtls_init();
 
+
 	the_conn = conn_create_noq(-1, NULL);
 	struct conn *conn = the_conn;
 
 	conn->radios = mbag_i_create();
+	conn->radios_upd=mbag_i_create(); 
+
 	mbag_i_set_mbag(conn->radios,0,mbag_create());
-	mbag_i_set_mbag(conn->radios,1,mbag_create());
-//      mbag_set_mbag(conn->radios,0xff,mbag_create());
+	mbag_i_set_mbag(conn->radios_upd,0,mbag_create());
 
 
-	mbag_t r;
-	r  = mbag_i_get_mbag(conn->radios,0,NULL);
-	mbag_set_dword(r,CW_RADIO_TYPE,1);
-	r  = mbag_i_get_mbag(conn->radios,1,NULL);
-	mbag_set_dword(r,CW_RADIO_TYPE,2);
-//      r  = mbag_get_mbag(conn->radios,1,NULL);
-//      mbag_set_dword(r,CW_RADIO_TYPE,1);
 
-
-//      cw_register_actions_cipwap_wtp(&capwap_actions);
-//      cw_register_actions_capwap_80211_wtp(&capwap_actions);
-//
 #define CWMOD "cisco"
 #define CWBIND "cisco"
 //#define CWMOD "capwap"
@@ -162,69 +137,52 @@ int main()
 		exit(0);
 	}
 
-	printf("add capwap80211\n");
 	int rc = mod->register_actions(&capwap_actions,MOD_MODE_BINDINGS);
-
-	printf("Out reg = %d\n",rc);
 
 	conn->detected = 1;
 	conn->dtls_verify_peer=0;
-	conn->dtls_mtu = 22180;
+	conn->dtls_mtu = 12000;
 
-
-
-/*
-	MAVLITER_DEFINE(it,capwap_actions.strelem);
-	mavliter_foreach(&it){
-		struct cw_str *s = mavliter_get(&it);
-
-	}
-*/
-
-	////cw_register_actions_capwap_80211_wtp(&capwap_actions);
 
 	conn->actions = &capwap_actions;
+
 	conn->outgoing = mbag_create();
 	conn->incomming = mbag_create();
 	conn->local = mbag_create();
-
-//	conn->base_rmac = get_base_rmac();
-
-//	conn->capwap_mode = CW_MODE_CAPWAP;
-	//conn->capwap_mode = CW_MODE_CISCO;
+	conn->config = mbag_create();
 
 	the_conn->strict_capwap = 0;
 
-
-	conn->config = mbag_create();
-
 	cfg_from_json(conn);
 	setup_conf(conn);
+
+	mbag_t r;
+//	r  = mbag_i_get_mbag(conn->radios,0,NULL);
+	r = conn->radios;
+	MAVLITER_DEFINE(it,r);
+	mavliter_foreach(&it){
+		struct mbag_item *i=mavliter_get(&it);
+		printf("RID = %d\n",i->iid);
+		printf("DATA: %p\n",i->data);
+		mbag_t radio= (mbag_t)i->data;
+		struct mbag_item *mri = mbag_get(radio,CW_RADIOITEM80211_WTP_RADIO_INFORMATION);
+		
+	if (!mri){
+printf("Setting to 8 %p %p\n",mri,r);
+		mbag_set_dword(radio,CW_RADIOITEM80211_WTP_RADIO_INFORMATION,1);
+	}
+	else{
+		printf("MRI %p\n",mri);
+	}
+
+		
+	}
+	
+
+
+
 	mod_init_config(mod,conn->config);
 	cfg_to_json();
-
-//	mbag_t board_data = mbag_create();
-//	mbag_set_dword(board_data, CW_ITEM_WTP_BOARD_VENDOR, conf_vendor_id);
-
-
-//	mbag_set_bstrn(board_data, CW_ITEM_WTP_BOARD_MACADDRESS, conf_macaddress,
-//		       conf_macaddress_len);
-//	mbag_set_bstr16n(board_data, CW_ITEM_WTP_BOARD_SERIALNO,
-//			 bstr_data(conf_serial_no), bstr_len(conf_serial_no));
-
-//	mbag_set_bstr16n(board_data, CW_ITEM_WTP_BOARD_MODELNO, bstr_data(conf_model_no),
-//			 bstr_len(conf_model_no));
-
-
-
-//	mbag_set_mbag(conn->config, CW_ITEM_WTP_BOARD_DATA, board_data);
-
-
-
-
-//      mbag_set_bstrv(conn->config, CW_ITEM_WTP_SOFTWARE_VERSION, sw);
-
-//	printf("Board_data %p\n", board_data);
 
 	mbag_t mb = mbag_get_mbag(conn->config, CW_ITEM_WTP_BOARD_DATA, NULL);
 	printf("mbag %p\n", mb);
@@ -235,20 +193,15 @@ int main()
 	cw_acpriolist_set(acprios, "AC8new", strlen("AC8new"), 12);
 
 
-      //mbag_set_str(conn->config,CW_ITEM_LOCATION_DATA,"Berlin");
-      //mbag_set_str(conn->config,CW_ITEM_WTP_NAME,"WTP Tube");
 
-	mbag_set_byte(conn->local, CW_ITEM_WTP_MAC_TYPE, 0);
-	mbag_set_byte(conn->local, CW_ITEM_WTP_FRAME_TUNNEL_MODE, 0);
-
+	mbag_set_byte(conn->local, CW_ITEM_WTP_MAC_TYPE, CW_WTP_MAC_TYPE_SPLIT);
+	mbag_set_byte(conn->local, CW_ITEM_WTP_FRAME_TUNNEL_MODE, CW_WTP_FRAME_TUNNEL_MODE_E);
 	conn->wbid=1;
 
 
 
 
-cw_set_msg_end_callback(conn,CW_STATE_RUN,CW_MSG_CONFIGURATION_UPDATE_REQUEST,handle_update_req);
-//cw_set_msg_end_callback(conn,CW_STATE_CONFIGURE,CW_MSG_CONFIGURATION_STATUS_RESPONSE,handle_update_req);
-
+//	cw_set_msg_end_callback(conn->actions,CW_STATE_RUN,CW_MSG_CONFIGURATION_UPDATE_REQUEST,handle_update_req);
 
 
 	if (!discovery())
@@ -256,11 +209,10 @@ cw_set_msg_end_callback(conn,CW_STATE_RUN,CW_MSG_CONFIGURATION_UPDATE_REQUEST,ha
 	if (!join())
 		return -1;
 
-//	mavl_del_all(conn->incomming);
-//	conn->incomming = conn->config;
 	if (!configure())
 		return -1;
 
+	cw_dbg(DBG_X,"Saveing config 0");
 
 	cfg_to_json();
 

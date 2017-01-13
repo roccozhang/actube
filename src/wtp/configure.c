@@ -18,10 +18,15 @@ int configure()
 	mbag_del(conn->incomming,CW_ITEM_RESULT_CODE);
 
 	mbag_set_str(conn->local,CW_ITEM_AC_NAME,"abc");
-	mbag_set_byte(conn->config,CW_ITEM_WTP_MAC_TYPE,WTP_MAC_TYPE_BOTH);
+//	mbag_set_byte(conn->config,CW_ITEM_WTP_MAC_TYPE,WTP_MAC_TYPE_BOTH);
+//	mbag_set_byte(conn->config,CW_ITEM_WTP_MAC_TYPE,CAPWAP_WTP_MAC_TYPE_SPLIT);
 
+	/* for config status request send the whole config */
+	mbag_t radios_upd = conn->radios_upd;
+	conn->radios_upd=conn->radios;
 
 	int rc = cw_send_request(conn, CW_MSG_CONFIGURATION_STATUS_REQUEST);
+	conn->radios_upd=radios_upd;
 
 	if (!cw_rcok(rc)) {
 		if (rc > 0) {

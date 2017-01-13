@@ -85,9 +85,9 @@ AP = RAD = WTP
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |          Country Str1         |      Country String 2         |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | Countr Str2   |    gPeriod    |          Reg(?)               |
+   | Countr Str2   |  GPR Period   |          Reg(?)               |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |          Reg(?)               |              ?                |
+   |          Reg(?)               | Max. Stations |               |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
    Type: 8 
@@ -142,11 +142,38 @@ AP = RAD = WTP
 */
 
 
+10. IEEE 802.11 Multi-Domain Capability
+
+   Sames as element type 10 in RFC 5412 (LWAPP)
+
+11. for IEEE 802.11 MAC Operation
+   Similar to  msg element type 11 in RCF 5412
+
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |    Radio ID   |   Reserved(?) |  Reserved(?)  | RTS Thres ... 
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       ... RTS Thres  |  Short Retry  |  Long Retry   | Fragment ...
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        ... Threshold |      Tx MSDU Lifetime ...                       
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        ...           |      Rx MSDU Lifetime ...                       
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        ...           |
+      +-+-+-+-+-+-+-+-+
+
 
 28. IEEE 802.11 Delete WLAN
 
    Same as element type 28 specified in RFC 5412 (LWAPP)
  
+51. Cisco Broadcast SSID Mode
+    0               
+    0 1 2 3 4 5 6 7 
+   +-+-+-+-+-+-+-+-+
+   |     Mode      |
+   +-+-+-+-+-+-+-+-+
 
 
 
@@ -211,6 +238,15 @@ AP = RAD = WTP
        0=DHCP  
     Reserved: (?)
 
+88.  Cisco Airspace Capability
+
+      0                   1
+      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |   Radio ID    |   Capapab     |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
 
 91.  Cisco AC Name with Index
 
@@ -267,7 +303,7 @@ AP = RAD = WTP
     0                   1
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |            LEDState           |
+   | LED State     |  Save Flag    |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
    Type: 125
@@ -275,7 +311,7 @@ AP = RAD = WTP
    
    LEDState:  
        1 = Enabeled
-       0 = Disabled (?)
+       0 = Disabled
 
 
 126. Cisco AP Regulatory Domain
@@ -319,6 +355,16 @@ AP = RAD = WTP
 
    ResetBtnState: 1 = Enabeled
                   0 = Disabled (?)
+
+135. Cisco AP Cordump
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                 TFTP IP Address                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+     ... zeros until pos 16
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+16:| Compression   |  Filename ...
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  
 
 
 151. Cisco AP Time Sync
@@ -419,6 +465,17 @@ AP = RAD = WTP
    | Log Facility  | 
    +-+-+-+-+-+-+-+-+
 
+235. Cisco Radio Operational State Cause Detail
+  
+   Detailed cause for last radio operational state change.
+   This message element schould follow imediately a Radio Operational
+   State message element.
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Detailed Cause                                                |    
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
 240. Cisco AP Retransmit Param 
@@ -459,7 +516,25 @@ Length: 4
 
 
 254. Cisco SPAM AP LED Flash Config
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Flash Enable  | ?                                             |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                          Flash Sec            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Save Flag     |                                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+   Flash Enable:
+	1 = enabled
+	0 = disabled
+   Flash Sec:
+	Seconds to flash
+   Save Flag:
+	?
+	
+   
 
 
 LWAPP
@@ -512,7 +587,14 @@ Vendor spec CAPWAP | Vedor spec LWAPP  | Vendor specific LWAPP data
 	01 = Telnet/SSH Username and Password
 	02 = 802.1x Supplicant Credentials
 
+19. Manager IP Addr
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  IPv4 Addr                                                    |                       
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
 
+	
 
 
 21. Radio Module Info (?) (LWAPP 104)
@@ -621,11 +703,11 @@ Length: >=4
 
 
 74. Cisco DTLS Data Config (LWAPP)
-    0                   1                   
-    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | DTLS Data cap |DTLS Data en.  | 
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+0                   1                   
+0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+| DTLS Data cap |DTLS Data en.  | 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 Type: 74
 Length: 2 
@@ -638,6 +720,16 @@ Length: 2
 	0: DTLS Data disabled
 	1: DTLS Data enabled
 
+80. Auto Immune Payload (?)
+  0                   1                   
+  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 
+  +-+-+-+-+-+-+-+-+
+  | Auto Immune   | 
+  +-+-+-+-+-+-+-+-+
+
+  
+
+
 85. Cisco Primed Join Timeout (LWAPP)
     0                   1                   
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 
@@ -647,6 +739,24 @@ Length: 2
 Type: 85
 
    Timeout: Timeout in seconds
+
+
+111. RAD Extended Config
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Radio ID        |       Beracon Interval     |    Beacon      
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+     Range           | Multicast Buffer           |   Multicast
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+     Data Rate       | RX SenSop Threshold        |   Cccat
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+     ....            |
+   +-+-+-+-+-+-+-+-+-+
+
+
+
 
 128. Cisco Add WLAN Name (?)
 
@@ -668,6 +778,19 @@ Length: 1
        1=On   (?)
        0=Off  (?)
    
+132. Cisco MWAR Hash Value with Index (LWAPP)
+   
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Index (?)       |	 Hash ... 
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+	
+   Index: 
+
+   Hash: ASCII string witch represents in hexadecimal notation 
+         the SHA1 hash of the device certificate.
+
 
 134. Cisco MWAR Hash Value (LWAPP)
    

@@ -58,6 +58,7 @@
 
 #define CW_CISCO_CERTIFICATE			LW_ELEM_CERTIFICATE			/* 44 */
 #define CW_CISCO_WTP_BOARD_DATA			LW_ELEM_WTP_BOARD_DATA			/* 50 */
+#define CW_CISCO_BCAST_SSID_MODE		LW_BCAST_SSID_MODE
 #define CW_CISCO_AP_MODE_AND_TYPE		LW_ELEM_80211_WTP_MODE_AND_TYPE		/* 54 */
 #define CW_CISCO_AP_QOS				LW_ELEM_QOS				/* 57 */
 
@@ -67,6 +68,7 @@
 #define CW_CISCO_AP_STATIC_IP_ADDR		83
 #define CW_CISCO_SIG_PAYLOAD			84
 #define CW_CISCO_SIG_TOGGLE			87
+#define CW_CISCO_AIRSPACE_CAPABILITY		88
 
 #define CW_CISCO_AC_NAME_WITH_INDEX		91
 #define CW_CISCO_SPAM_DOMAIN_SECRET		96
@@ -76,14 +78,14 @@
 #define CW_CISCO_AP_UPTIME			108
 
 #define CW_CISCO_AP_GROUP_NAME			123
-#define CW_CISCO_SPAM_AP_LED_STATE		125
+#define CW_CISCO_AP_LED_STATE_CONFIG		125
 #define CW_CISCO_AP_MODEL			127
 #define CW_CISCO_AP_RESET_BUTTON_STATE		128
 
-#define CW_CISCO_AP_LED_STATE_CONFIG		125
 #define CW_CISCO_AP_REGULATORY_DOMAIN		126
 
 #define CW_CISCO_LWAPP_CHANNEL_POWER		134
+#define CW_CISCO_AP_CORE_DUMP			135
 #define CW_CISCO_AP_PRE_STD_SWITCH_CONFIG	137
 #define CW_CISCO_AP_POWER_INJECTOR_CONFIG	138
 
@@ -99,8 +101,15 @@
 #define CW_CISCO_TLV_PAYLOAD			215
 #define CW_CISCO_AP_LOG_FACILITY		224
 
+#define CW_CISCO_OPER_STATE_DETAIL_CAUSE	235
+
+
 #define CW_CISCO_AP_RETRANSMIT_PARAM		240
+
+#define CW_CISCO_DOT11_CONFIG_CHECKER		242
+
 #define CW_CISCO_AP_VENUE_SETTINGS		249
+#define CW_CISCO_AP_LED_FLASH_CONFIG		254
 
 
 
@@ -123,32 +132,6 @@ int cw_out_cisco_ap_timesync(struct conn *conn,struct cw_action_out * a,uint8_t 
 
 
 
-/**
- * Add a Cisco RAD Name message element to buffer
- * @param dst destination buffer
- * @param name RAD name, zero terminated
- * @return number of bytes put
- */
-//static inline int cw_addelem_cisco_rad_name(uint8_t * dst, uint8_t * name)
-//{
-//	return cw_addelem_vendor_specific_payload(dst, CW_VENDOR_ID_CISCO, CW_CISCO_RAD_NAME, name,
-//						  strlen((char *) name));
-//}
-
-/**
- * Add a Cisco Group Name message element to buffer
- * @param dst destination buffer
- * @param name Group name, zero terminated
- * @return number of bytes put
- */
-/*
-
-static inline int cw_addelem_cisco_ap_group_name(uint8_t * dst, uint8_t * name){
-	return cw_addelem_vendor_specific_payload(dst, CW_VENDOR_ID_CISCO, CW_CISCO_AP_GROUP_NAME, name,
-						  strlen((char *) name));
-}
-
-*/
 
 static inline int cw_addelem_cisco_ap_regulatory_domain(uint8_t *dst, struct radioinfo * ri){
 	uint8_t *d=dst+10;

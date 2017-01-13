@@ -49,7 +49,7 @@
  */
 
 /** CAPWAP Version */
-#define CAPWAP_VERSION ((uint8_t)0)
+#define CAPWAP_VERSION (0)
 
 #define CWIANA_ENTERPRISE_NUMBER 0
 
@@ -271,14 +271,6 @@ CW_MSG_MAXMSG	=				26
 #define	CW_ELEM_WTP_IPV6_IP_ADDRESS			43
 
 
-/* pseudo message elements, defined for libcapwap */
-
-//#define XCWMSGELEM_CAPWAP_LOCAL_IP_ADDRESS	0x10000	/* means LOCAL_IPV4 or IPV6 ADRESS */
-//#define XCWMSGELEM_CAPWAP_CONTROL_IP_ADDRESS	0x20000	/* means LOCAL_IPV4 or IPV6 ADRESS */
-//#define XCWMSGELEM_CAPWAP_RADIO_INFO		0x30000	/* a radio info element  */
-
-
-
 
 /**
  * @defgrpup BOARD_SUBELEMS Board Data Sub-Elements
@@ -309,14 +301,11 @@ CW_MSG_MAXMSG	=				26
 #define CW_SUBELEM_AC_SOFTWARE_VERSION			5
 
 
-//#include "wtpinfo.h"
-//#include "acinfo.h"
-
 /* Frame tunnnel mode bits */
-#define WTP_FRAME_TUNNEL_MODE_R	1	/* Reserved */
-#define WTP_FRAME_TUNNEL_MODE_L	2	/* Local bridging */
-#define WTP_FRAME_TUNNEL_MODE_E	4	/* 802.3 mode */
-#define WTP_FRAME_TUNNEL_MODE_N	8	/* native mode */
+#define CW_WTP_FRAME_TUNNEL_MODE_R	1	/* Reserved */
+#define CW_WTP_FRAME_TUNNEL_MODE_L	2	/* Local bridging */
+#define CW_WTP_FRAME_TUNNEL_MODE_E	4	/* 802.3 mode */
+#define CW_WTP_FRAME_TUNNEL_MODE_N	8	/* native mode */
 
 #include "radioinfo.h"
 
@@ -331,15 +320,19 @@ CW_MSG_MAXMSG	=				26
 
 
 /* wtp mac types */
-#define WTP_MAC_TYPE_LOCAL	0
-#define WTP_MAC_TYPE_SPLIT	1
-#define WTP_MAC_TYPE_BOTH	2
+#define CW_WTP_MAC_TYPE_LOCAL	0
+#define CW_WTP_MAC_TYPE_SPLIT	1
+#define CW_WTP_MAC_TYPE_BOTH	2
 
 
 
 
 //#define CWMSG_MAX_SIZE 65536
 #define CWMSG_MAX_SIZE 2048
+
+
+#define CW_SESSION_ID_LEN	16
+
 
 /* capwap timer default values */
 #define CAPWAP_DISCOVERY_INTERVAL	5
@@ -369,7 +362,6 @@ CW_MSG_MAXMSG	=				26
 #else
 #define CAPWAP_CIPHER	"ALL"
 #endif
-
 
 
 
@@ -514,6 +506,25 @@ enum cw_reboot_failure_types {
 
 
 
+#define CW_RADIO_ADMIN_STATE_ENABLED	1
+#define CW_RADIO_ADMIN_STATE_DISABLED	2
+
+#define CW_RADIO_OPER_STATE_ENABLED	1
+#define CW_RADIO_OPER_STATE_DISABLED	2
+
+#define CW_RADIO_OPER_STATE_ENABLED_7	2
+#define CW_RADIO_OPER_STATE_DISABLED_7	1
+
+
+#define CW_RADIO_OPER_CAUSE_NORMAL		0
+#define CW_RADIO_OPER_CAUSE_RADIO_FAILURE	1 
+#define CW_RADIO_OPER_CAUSE_SW_FAILURE		2
+#define CW_RADIO_OPER_CAUSE_ADMIN_SET		3
+
+
+
+
+
 extern void cw_read_image_data_request(struct cwimage_data *, uint8_t * msg, int len);
 
 //extern int cw_readelem_ac_descriptor(struct ac_info *acinfo, int type, uint8_t * msgelem,
@@ -531,68 +542,6 @@ extern void cw_send_image_file(struct conn *conn, FILE * infile);
 extern int cw_readmsg_configuration_status_response(uint8_t * elems, int elems_len);
 extern int cw_readmsg_configuration_update_request(uint8_t * elems, int elems_len);
 
-
-
-
-/*
-static inline int cw_addelem_radio_operational_state(uint8_t * dst, struct radioinfo *ri)
-{
-	cw_put_byte(dst + 4 + 0, ri->rid);
-	cw_put_byte(dst + 4 + 1, ri->state);
-	cw_put_byte(dst + 4 + 2, ri->cause);
-	return 3 + cw_put_elem_hdr(dst, CW_ELEM_RADIO_OPERATIONAL_STATE, 3);
-}
-*/
-
-
-/*
-#define cw_put_elem_vendor_hdr(dst,vendorid,elemid,len)\
-	(cw_put_elem_hdr(dst,CW_ELEM_VENDOR_SPECIFIC_PAYLOAD,  \
-	cw_put_dword(dst+4,vendorid) + cw_put_word(dst+8,elemid) +len ))
-
-
-
-
-
-#define cw_addelem(dst,type,data,len)\
-	(cw_put_elem_hdr(dst,type,len)+cw_put_data(dst+4,data,len))
-*/
-
-/*
-#define cw_addelem_vendor_specific_payload(dst,vendorid,elemid,data,len)\
-	(cw_put_elem_vendor_hdr(dst,vendorid,elemid,len) + \
-	 cw_put_data(dst+10,data,len))
-*/
-
-/*
-extern int cw_addelem_vendor_specific_payload(uint8_t * dst, uint32_t vendorid,
-					      uint16_t elemid, uint8_t * data,
-					      uint16_t len);
-
-
-extern void cw_prepare_configuration_status_request(struct conn *conn,
-						    struct radioinfo *radioinfo,
-						    struct wtpinfo *wtpinfo);
-extern void cw_prepare_change_state_event_request(struct conn *conn,
-						  struct radioinfo *radioinfo,
-						  struct wtpinfo *wtpinfo);
-
-extern int cw_send_configuration_update_response(struct conn *conn, int seqnum,
-						 struct radioinfo *radioinfo);
-*/
-
-
-
-
-
-/* cwmsg methods */
-/*
-static inline int cw_addelem_result_code(uint8_t * dst, uint32_t code)
-{
-	cw_put_dword(dst + 4, code);
-	return 4 + cw_put_elem_hdr(dst, CW_ELEM_RESULT_CODE, 4);
-}
-*/
 
 
 /* Message to text stuff */
@@ -668,11 +617,6 @@ static inline const char *cw_strelemp_(cw_strheap_t h, int msg_id)
 
 //int cw_process_msg(struct conn *conn, uint8_t * rawmsg, int len);
 
-
-extern int cw_in_generic(struct conn *conn, struct cw_action_in *a, uint8_t * data,
-			 int len,struct sockaddr *from);
-extern int cw_in_generic2(struct conn *conn, struct cw_action_in *a, uint8_t * data,
-			 int len,struct sockaddr *from);
 
 extern int cw_in_vendor_specific_payload(struct conn *conn, struct cw_action_in *a,
 					 uint8_t * data, int len,struct sockaddr *from);
@@ -801,7 +745,7 @@ int cw_in_check_chng_state_evnt_req(struct conn *conn, struct cw_action_in *a, u
 			 int len,struct sockaddr *from);
 
 
-int cw_out_radio_operational_states(struct conn *conn, struct cw_action_out *a, uint8_t * dst);
+//int cw_out_radio_operational_states(struct conn *conn, struct cw_action_out *a, uint8_t * dst);
 
 
 int cw_in_check_cfg_update_req(struct conn *conn, struct cw_action_in *a, uint8_t * data,

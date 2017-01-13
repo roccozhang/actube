@@ -45,6 +45,10 @@
 #include "ac.h"
 #include "cw/format.h"
 
+
+#include "dataman.h"
+
+
 int ac_run();
 
 
@@ -57,10 +61,12 @@ static void *alive_thread(void *data)
 	}
 }
 
+
 #include <getopt.h>
 static int parse_args(int argc, char *argv[])
 {
-	int getopt_ret, option_index;
+//	int getopt_ret;
+	int option_index;
 
 	static struct option long_options[] = {
 		{"version", optional_argument, NULL, 'v'},
@@ -85,39 +91,11 @@ extern struct mod_ac * cw_get_mod_ac(const char *name);
 
 #include "cw/mlist.h"
 
-static int mcmp(void *v1,void*v2)
-{
-	return strcmp((char*)v1,(char*)v2);
-}
 
 int main(int argc, char *argv[])
 {
 
 	int rc = 0;
-
-	/*
-	struct mlist_elem *e;
-
-	mlist_t * l = mlist_create(mcmp);
-
-	mlist_append(l,"Hallo");
-
-	mlist_append(l,"Welt");
-
-	e = mlist_find(l,NULL,"Welt");
-
-	printf("Found: %p\n",e);
-
-	exit(0);
-	*/
-
-
-/*
-struct mod_ac *m = cw_get_mod_ac("cipwap");
-printf("Ptr: %p\n",m);
-
-m->init();
-*/
 
 	/* parse arguments */
 	parse_args(argc, argv);
@@ -136,7 +114,7 @@ m->init();
 
 	/* Warn, if the "secret" debugging feature for 
 	   developers is turned on ;) */
-	DBGX("Attention! %s", "DBGX is ON!");
+	DBGX("Attention! %s", "DBG X is ON!");
 
 
 	/* Initialize the database */
@@ -158,36 +136,6 @@ m->init();
 	/* Init DTLS library */
 	dtls_init();
 
-	int regn;
-
-	/* Load CAPWAP base protocol */
-/*	if (conf_capwap_mode == CW_MODE_CIPWAP) {
-		cw_dbg(DBG_INFO, "Loading CIPWAP Actions ...");
-		regn = cw_register_actions_cipwap_ac(&capwap_actions);
-	} else {
-		cw_dbg(DBG_INFO, "Loading standard CAPWAP Actions ...");
-		regn = cw_register_actions_capwap_ac(&capwap_actions);
-	}
-*/
-
-	//regn = cw_register_actions_capwap_ac(&capwap_actions);
-
-
-	//struct outelem * l = cw_actionlist_out_get_mlist(capwap_actions.out,CW_MSG_DISCOVERY_RESPONSE);
-
-	//printf("List got: %p\n",l);
-
-
-
-
-//	exit(0);
-
-
-	/* Load bindings */
-	cw_dbg(DBG_INFO, "Loading 802.11 Bindings ...");
-//      regn += cw_register_actions_capwap_80211_ac(&capwap_actions);
-
-	cw_dbg(DBG_INFO, "Registered %d protocol actions and strings.", regn);
 
 
 
@@ -198,7 +146,8 @@ m->init();
 	if (!wtplist_init())
 		goto errX;
 
-
+	if (!dataman_list_init())
+		goto errX;
 
 
 	cw_log(LOG_INFO, "Starting AC-Tube, Name=%s, ID=%s", conf_acname, conf_acid);
@@ -245,7 +194,7 @@ int ac_run()
 		conf_parse_listen_addr(conf_listen_addrs[i], addr, port, &proto);
 
 
-		struct sockaddr sa;
+		//struct sockaddr sa;
 
 
 		socklist_add_unicast(addr, port,proto);
@@ -346,9 +295,6 @@ int ac_run()
 
 			if (FD_ISSET(socklist[i].sockfd, &fset)){
 
-//				memset(&srcaddr, 0, sizeof(struct sockaddr_storage));
-//				sockaddrlen = sizeof(struct sockaddr_storage);
-
 				int len = sock_receive(socklist[i].sockfd,
 						       buffer, sizeof(buffer),
 						       0,
@@ -368,8 +314,48 @@ int ac_run()
 
 void process_cw_data_packet(int index, struct sockaddr *addr, uint8_t * buffer, int len)
 {
+	cw_dbg(DBG_X, "There is a data packet now");
+
+	dataman_list_lock();
+	cw_dbg(DBG_X, "Dataman list locked, now getting");
+	struct dataman * dm = dataman_list_get(socklist[index].data_sockfd,addr);
+	cw_dbg(DBG_X, "Dataman list locked, now gotted");
+
+	cw_dbg(DBG_INFO,"Packet for dataman %s,%d",sock_addr2str_p(addr),socklist[index].data_sockfd);
+	if (!dm) {
+		cw_dbg(DBG_INFO,"No dataman %s,%d",sock_addr2str_p(addr),socklist[index].data_sockfd);
+		dm = dataman_create(socklist[index].data_sockfd,addr);
+		if (!dm){
+			cw_log(LOG_ERR,"Can't create dataman for packet from %s",sock_addr2str_p(addr));
+			return;
+		}
+		dataman_list_add(dm);
+
+		dataman_start(dm);
+
+
+	}
+	dataman_list_unlock();
+
+	dataman_add_packet(dm,buffer,len);
+
+	return;
+
+	exit(0);
+
+
+
+
 	printf("Data packet received len = %d\n",len);
 	exit(0);
+	struct wtpman *wtpman = wtplist_get(addr);
+	if (!wtpman){
+		cw_dbg(DBG_PKT_ERR,"Discarding packet on data channel from %s - No wtpman found.",sock_addr2str(addr));
+		return;
+	}
+
+
+	wtpman_addpacket(wtpman, buffer, len);
 }
 
 

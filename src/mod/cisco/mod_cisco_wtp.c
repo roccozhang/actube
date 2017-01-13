@@ -12,6 +12,8 @@
 
 #include "cw/vendors.h"
 
+#include "include/cipwap_items.h"
+
 extern int cisco_register_actions80211_wtp(struct cw_actiondef *def);
 extern int cisco_register_actions_wtp(struct cw_actiondef *def);
 
@@ -21,10 +23,10 @@ static int register_actions(struct cw_actiondef *actions, int mode)
 		case MOD_MODE_CAPWAP:
 		{
 
-			struct mod_wtp *cmod = modload_wtp("capwap");
+			struct mod_wtp *cmod = modload_wtp("cipwap");
 			if (!cmod) {
 				cw_log(LOG_ERR,
-				       "Can't initzialize mod_cisco, failed to load base mod mod_capwap");
+				       "Can't initzialize mod_cisco, failed to load base mod mod_cipwap");
 				return 1;
 			}
 			
@@ -86,10 +88,10 @@ static int init()
 
 static int init_config(mbag_t config)
 {
-	bstr16_t gname = mbag_get_bstr16(config,CW_ITEM_WTP_GROUP_NAME,NULL);
+	bstr16_t gname = mbag_get_bstr16(config,CIPWAP_ITEM_WTP_GROUP_NAME,NULL);
 	if (!gname){
 		gname = bstr16_create_from_str("Entangled");
-		mbag_set_bstr16(config,CW_ITEM_WTP_GROUP_NAME,gname);
+		mbag_set_bstr16(config,CIPWAP_ITEM_WTP_GROUP_NAME,gname);
 	}
 
 
@@ -97,7 +99,8 @@ static int init_config(mbag_t config)
 
 	mbag_set_dword(board_data, CW_ITEM_WTP_BOARD_VENDOR,CW_VENDOR_ID_CISCO);
 
-	mbag_set_bstr16(board_data, CW_ITEM_WTP_BOARD_MODELNO,bstr16_create_from_str("AIR-LAP1131AG-E-K9"));
+//	mbag_set_bstr16(board_data, CW_ITEM_WTP_BOARD_MODELNO,bstr16_create_from_str("AIR-LAP1131AG-E-K9"));
+	mbag_set_bstr16(board_data, CW_ITEM_WTP_BOARD_MODELNO,bstr16_create_from_str("AIR-LAP1142N-E-K9"));
 	mbag_set_bstr16(board_data, CW_ITEM_WTP_BOARD_SERIALNO,bstr16_create_from_str("FCZ1441Q0XZ"));
 	mbag_set_bstr16(board_data, CW_ITEM_WTP_BOARD_ID,bstr16_create_from_cfgstr(".x0000"));
 	mbag_set_bstr16(board_data, CW_ITEM_WTP_BOARD_REVISION,bstr16_create_from_cfgstr(".x4230"));
